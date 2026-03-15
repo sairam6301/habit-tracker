@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HabitFlow — Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --green-900: #14532d;
+  --green-800: #166534;
+  --green-700: #15803d;
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-400: #4ade80;
+  --green-300: #86efac;
+  --green-100: #dcfce7;
+  --green-50:  #f0fdf4;
+  --bg: #f8faf9;
+  --card: #ffffff;
+  --text: #0f1f13;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ─── AUTH ─────────────────────────────────── */
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--green-900) 0%, var(--green-700) 50%, var(--green-500) 100%);
+  position: relative;
+  overflow: hidden;
+}
+#auth-screen::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  top: -200px; right: -200px;
+}
+#auth-screen::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  bottom: -150px; left: -100px;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 420px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3);
+  position: relative;
+  z-index: 1;
+  animation: slideUp .4s ease;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.auth-logo .logo-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--green-600), var(--green-400));
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 28px;
+}
+.auth-logo h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px; font-weight: 800;
+  color: var(--green-800);
+}
+.auth-logo p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+.auth-tabs {
+  display: flex;
+  background: var(--green-50);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+.auth-tab {
+  flex: 1; text-align: center;
+  padding: 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all .2s;
+}
+.auth-tab.active {
+  background: white;
+  color: var(--green-700);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 13px; color: var(--text); }
+.form-group input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit;
+  transition: border-color .2s;
+  outline: none;
+}
+.form-group input:focus { border-color: var(--green-500); }
+
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: white; border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all .2s;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(34,197,94,.35); }
+.btn-primary:active { transform: none; }
+
+.auth-error {
+  background: #fef2f2; color: #dc2626;
+  padding: 10px 12px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 16px;
+  display: none;
+}
+
+/* ─── APP ─────────────────────────────────── */
+#app-screen { display: none; }
+
+.topbar {
+  background: linear-gradient(135deg, var(--green-800), var(--green-600));
+  padding: 0 28px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,.15);
+}
+.topbar-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px; font-weight: 800;
+  color: white; display: flex; align-items: center; gap: 10px;
+}
+.topbar-logo .logo-dot { width: 8px; height: 8px; background: var(--green-300); border-radius: 50%; }
+
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.month-nav {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.15);
+  padding: 6px 14px; border-radius: 30px;
+}
+.month-nav button {
+  background: none; border: none; color: white;
+  cursor: pointer; font-size: 16px; line-height: 1;
+  padding: 2px 6px; border-radius: 4px;
+  transition: background .2s;
+}
+.month-nav button:hover { background: rgba(255,255,255,.2); }
+#month-label { color: white; font-weight: 600; font-size: 14px; min-width: 130px; text-align: center; }
+
+.user-badge {
+  display: flex; align-items: center; gap: 8px;
+  color: white;
+}
+.user-avatar {
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,.25);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+}
+.btn-logout {
+  background: rgba(255,255,255,.15); border: none;
+  color: white; padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; font-size: 13px; font-family: inherit;
+  transition: background .2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.25); }
+
+.main-content {
+  max-width: 1400px; margin: 0 auto;
+  padding: 24px 28px;
+}
+
+/* ─── KPI CARDS ─────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+  transition: transform .2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.kpi-card.green::before { background: linear-gradient(90deg, var(--green-500), var(--green-400)); }
+.kpi-card.teal::before { background: linear-gradient(90deg, #0d9488, #14b8a6); }
+.kpi-card.amber::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.kpi-card.rose::before { background: linear-gradient(90deg, #e11d48, #f43f5e); }
+
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px; }
+.kpi-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; }
+.kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+.kpi-icon { position: absolute; right: 18px; top: 18px; font-size: 28px; opacity: .15; }
+
+/* ─── CHARTS ROW ─────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 0.8fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.chart-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--text); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chart-title .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green-500);
+}
+.chart-container { position: relative; height: 180px; }
+
+/* ─── HABIT TABLE ─────────────────────────────── */
+.table-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.table-header {
+  padding: 18px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.table-header-left {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 700;
+}
+.btn-add-habit {
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: white; border: none;
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .2s;
+}
+.btn-add-habit:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(34,197,94,.3); }
+
+.habit-table-wrap { overflow-x: auto; }
+.habit-table {
+  width: 100%; border-collapse: collapse; min-width: 900px;
+}
+.habit-table thead tr {
+  background: var(--green-800);
+}
+.habit-table thead th {
+  color: white; font-weight: 600;
+  padding: 10px 8px; font-size: 11px;
+  text-align: center; white-space: nowrap;
+  border: 1px solid var(--green-700);
+}
+.habit-table thead th.habit-name-col {
+  text-align: left; padding-left: 16px; min-width: 180px; position: sticky; left: 0; z-index: 2;
+  background: var(--green-800);
+}
+.habit-table thead th.week-header {
+  background: var(--green-700);
+  font-size: 10px; letter-spacing: .04em;
+}
+.habit-table tbody tr:nth-child(even) { background: var(--green-50); }
+.habit-table tbody tr:hover { background: #e6f9ed; }
+.habit-table td {
+  padding: 8px; text-align: center;
+  border: 1px solid #e8f5e9; font-size: 12px;
+}
+.habit-table td.habit-name-cell {
+  text-align: left; padding-left: 16px;
+  font-weight: 500; position: sticky; left: 0;
+  background: inherit; z-index: 1; white-space: nowrap;
+}
+.habit-name-inner { display: flex; align-items: center; gap: 8px; }
+.habit-emoji { font-size: 16px; }
+
+.cb-wrap {
+  display: flex; align-items: center; justify-content: center;
+}
+.habit-cb {
+  appearance: none;
+  width: 18px; height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px; cursor: pointer;
+  transition: all .15s; position: relative;
+  background: white;
+}
+.habit-cb:checked {
+  background: var(--green-500);
+  border-color: var(--green-500);
+}
+.habit-cb:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: white; font-size: 11px; font-weight: 700;
+  line-height: 1;
+}
+.habit-cb:disabled {
+  background: #f3f4f6; cursor: not-allowed; opacity: .5;
+}
+.habit-cb.future { opacity: .3; }
+
+.pct-cell {
+  font-weight: 700; font-size: 12px;
+}
+.pct-cell.high { color: var(--green-600); }
+.pct-cell.mid { color: #d97706; }
+.pct-cell.low { color: #e11d48; }
+
+.del-btn {
+  background: none; border: none; cursor: pointer;
+  color: #d1d5db; font-size: 14px; padding: 4px;
+  border-radius: 4px; transition: color .2s;
+}
+.del-btn:hover { color: #e11d48; }
+
+/* progress bar in table */
+.progress-bar-wrap {
+  height: 4px; background: #e5e7eb; border-radius: 4px; overflow: hidden; min-width: 60px;
+}
+.progress-bar-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--green-500), var(--green-400));
+  transition: width .4s ease;
+}
+
+/* ─── PROGRESS SECTION ─────────────────────────────── */
+.progress-section {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;
+}
+.progress-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.progress-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700; margin-bottom: 16px;
+}
+.habit-progress-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.habit-progress-name { flex: 1; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.habit-progress-bar { flex: 2; height: 8px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
+.habit-progress-bar-fill {
+  height: 100%; border-radius: 10px;
+  background: linear-gradient(90deg, var(--green-600), var(--green-400));
+  transition: width .5s ease;
+}
+.habit-progress-pct { font-size: 12px; font-weight: 700; color: var(--green-700); min-width: 36px; text-align: right; }
+
+/* ─── MODAL ─────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: white; border-radius: 20px;
+  padding: 32px; width: 400px;
+  transform: scale(.95); transition: transform .25s;
+  box-shadow: var(--shadow-lg);
+}
+.modal-overlay.open .modal { transform: scale(1); }
+.modal h2 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.modal .form-group input, .modal .form-group select {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.modal .form-group input:focus, .modal .form-group select:focus { border-color: var(--green-500); }
+.modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+.btn-cancel {
+  flex: 1; padding: 11px;
+  background: var(--green-50); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px;
+  font-size: 14px; font-family: inherit;
+  cursor: pointer; transition: background .2s;
+}
+.btn-cancel:hover { background: #e5e7eb; }
+.btn-save {
+  flex: 2; padding: 11px;
+  background: linear-gradient(135deg, var(--green-600), var(--green-500));
+  color: white; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all .2s;
+}
+.btn-save:hover { box-shadow: 0 4px 14px rgba(34,197,94,.3); }
+
+.emoji-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.emoji-opt {
+  font-size: 20px; cursor: pointer; padding: 4px 6px;
+  border-radius: 6px; border: 2px solid transparent;
+  transition: all .15s;
+}
+.emoji-opt:hover, .emoji-opt.selected { border-color: var(--green-500); background: var(--green-50); }
+
+/* ─── LOADING ─────────────────────────────── */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,.8);
+  align-items: center; justify-content: center;
+  z-index: 999; display: none;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--green-100);
+  border-top-color: var(--green-500);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* ─── EMPTY ─────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 48px 20px; color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }
+.empty-state small { font-size: 12px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1100px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  .charts-row .chart-card:last-child { grid-column: span 2; }
+  .progress-section { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .charts-row { grid-template-columns: 1fr; }
+  .charts-row .chart-card:last-child { grid-column: span 1; }
+  .main-content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🌿</div>
+      <h1>HabitFlow</h1>
+      <p>Track habits. Build consistency. Grow daily.</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div id="login-form">
+      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="form-group"><label>Username</label><input type="text" id="signup-username" placeholder="yourname"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters"></div>
+      <button class="btn-primary" onclick="doSignup()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span>🌿</span>
+      <span>HabitFlow</span>
+      <div class="logo-dot"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <span id="month-label">December 2025</span>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span id="user-name" style="color:white;font-size:13px;font-weight:500"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card green">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-label">Monthly Progress</div>
+        <div class="kpi-value" id="kpi-monthly">0%</div>
+        <div class="kpi-sub" id="kpi-monthly-sub">0 of 0 completed</div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-label">Total Habits</div>
+        <div class="kpi-value" id="kpi-habits">0</div>
+        <div class="kpi-sub">habits tracked</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-icon">📆</div>
+        <div class="kpi-label">Days Tracked</div>
+        <div class="kpi-value" id="kpi-days">0</div>
+        <div class="kpi-sub" id="kpi-days-sub">days this month</div>
+      </div>
+      <div class="kpi-card rose">
+        <div class="kpi-icon">🔥</div>
+        <div class="kpi-label">Best Habit</div>
+        <div class="kpi-value" id="kpi-best">—</div>
+        <div class="kpi-sub" id="kpi-best-sub">top performer</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title"><div class="dot"></div> Daily Performance</div>
+        <div class="chart-container"><canvas id="line-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="dot" style="background:#0d9488"></div> Weekly Progress</div>
+        <div class="chart-container"><canvas id="bar-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="dot" style="background:#d97706"></div> Monthly Overview</div>
+        <div class="chart-container" style="height:180px;display:flex;align-items:center;justify-content:center">
+          <canvas id="pie-chart" style="max-height:170px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habit Table -->
+    <div class="table-section">
+      <div class="table-header">
+        <div class="table-header-left">📋 Habit Tracker Grid — <span id="table-month-label">December 2025</span></div>
+        <button class="btn-add-habit" onclick="openAddModal()">＋ Add Habit</button>
+      </div>
+      <div class="habit-table-wrap">
+        <div id="table-container"></div>
+      </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+      <div class="progress-card">
+        <div class="progress-card-title">📊 Habit Progress (This Month)</div>
+        <div id="habit-progress-list"></div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-card-title">🏆 Top 10 Daily Habits</div>
+        <div id="top-habits-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Habit Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h2>✨ Add New Habit</h2>
+    <div class="form-group">
+      <label>Habit Name</label>
+      <input type="text" id="habit-name-input" placeholder="e.g. Wake up at 6AM">
+    </div>
+    <div class="form-group">
+      <label>Choose Emoji</label>
+      <div class="emoji-picker" id="emoji-picker">
+        <span class="emoji-opt selected" data-emoji="✅" onclick="selectEmoji(this)">✅</span>
+        <span class="emoji-opt" data-emoji="🌅" onclick="selectEmoji(this)">🌅</span>
+        <span class="emoji-opt" data-emoji="💪" onclick="selectEmoji(this)">💪</span>
+        <span class="emoji-opt" data-emoji="📚" onclick="selectEmoji(this)">📚</span>
+        <span class="emoji-opt" data-emoji="🧘" onclick="selectEmoji(this)">🧘</span>
+        <span class="emoji-opt" data-emoji="💧" onclick="selectEmoji(this)">💧</span>
+        <span class="emoji-opt" data-emoji="🏃" onclick="selectEmoji(this)">🏃</span>
+        <span class="emoji-opt" data-emoji="🍎" onclick="selectEmoji(this)">🍎</span>
+        <span class="emoji-opt" data-emoji="😴" onclick="selectEmoji(this)">😴</span>
+        <span class="emoji-opt" data-emoji="📝" onclick="selectEmoji(this)">📝</span>
+        <span class="emoji-opt" data-emoji="🎯" onclick="selectEmoji(this)">🎯</span>
+        <span class="emoji-opt" data-emoji="🚫" onclick="selectEmoji(this)">🚫</span>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="addHabit()">Save Habit</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<script>
+const API = '';
+let currentUser = null;
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth() + 1;
+let habits = [], completions = [], analytics = {};
+let lineChart, barChart, pieChart;
+let selectedEmoji = '✅';
+
+// ── Helpers ──────────────────────────────────────
+function $(id) { return document.getElementById(id); }
+
+function loading(show) {
+  const el = $('loading');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+function monthName(m) {
+  return ['January','February','March','April','May','June',
+          'July','August','September','October','November','December'][m-1];
+}
+
+async function api(path, method='GET', body=null) {
+  try {
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    const data = await r.json();
+    return data;
+  } catch (e) {
+    console.error('API error:', e);
+    return { error: 'Cannot connect to server. Make sure Flask is running: python app.py' };
+  }
+}
+
+// ── Auth ──────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='signup'));
+  });
+  $('login-form').style.display = tab==='login' ? '' : 'none';
+  $('signup-form').style.display = tab==='signup' ? '' : 'none';
+  $('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = $('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function doLogin() {
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  if (!email || !password) { showAuthError('Please fill all fields'); return; }
+  loading(true);
+  try {
+    const r = await api('/api/login', 'POST', {email, password});
+    if (r.success) {
+      initApp(r.user);
+    } else {
+      showAuthError(r.error || 'Login failed. Check your email and password.');
+    }
+  } catch(e) {
+    showAuthError('Connection error. Is Flask running?');
+  } finally {
+    loading(false);
+  }
+}
+
+async function doSignup() {
+  const username = $('signup-username').value.trim();
+  const email = $('signup-email').value.trim();
+  const password = $('signup-password').value;
+  if (!username || !email || !password) { showAuthError('Please fill all fields'); return; }
+  if (password.length < 6) { showAuthError('Password must be at least 6 characters'); return; }
+  loading(true);
+  try {
+    const r = await api('/api/signup', 'POST', {username, email, password});
+    if (r.success) {
+      initApp(r.user);
+    } else {
+      showAuthError(r.error || 'Signup failed.');
+    }
+  } catch(e) {
+    showAuthError('Connection error. Is Flask running?');
+  } finally {
+    loading(false);
+  }
+}
+
+function initApp(user) {
+  currentUser = user;
+  $('auth-screen').style.display = 'none';
+  $('app-screen').style.display = '';
+  $('user-name').textContent = user.username;
+  $('user-avatar').textContent = user.username[0].toUpperCase();
+  loadAll();
+}
+
+function logout() {
+  currentUser = null;
+  habits = []; completions = []; analytics = {};
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart) { barChart.destroy(); barChart = null; }
+  if (pieChart) { pieChart.destroy(); pieChart = null; }
+  $('auth-screen').style.display = '';
+  $('app-screen').style.display = 'none';
+  $('login-email').value = '';
+  $('login-password').value = '';
+  $('auth-error').style.display = 'none';
+}
+
+// ── Month Nav ──────────────────────────────────────
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+  loadAll();
+}
+
+// ── Load All ──────────────────────────────────────
+async function loadAll() {
+  const label = `${monthName(currentMonth)} ${currentYear}`;
+  $('month-label').textContent = label;
+  $('table-month-label').textContent = label;
+  loading(true);
+  try {
+    const [h, c, a] = await Promise.all([
+      api(`/api/habits?user_id=${currentUser.id}`),
+      api(`/api/completions?user_id=${currentUser.id}&year=${currentYear}&month=${currentMonth}`),
+      api(`/api/analytics?user_id=${currentUser.id}&year=${currentYear}&month=${currentMonth}`)
+    ]);
+    // Guard against error responses
+    habits = Array.isArray(h) ? h : [];
+    completions = Array.isArray(c) ? c : [];
+    analytics = (a && !a.error) ? a : { monthly_pct:0, total_completed:0, total_possible:0, daily_labels:[], daily_values:[], week_labels:[], weekly_values:[], habit_progress:[], days_passed:0, num_habits:0 };
+    renderKPIs();
+    renderCharts();
+    renderTable();
+    renderProgress();
+  } catch(e) {
+    console.error('loadAll error:', e);
+    $('table-container').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load data</p><small>Make sure Flask server is running: <code>python app.py</code></small></div>`;
+  } finally {
+    loading(false);
+  }
+}
+
+// ── KPIs ──────────────────────────────────────
+function renderKPIs() {
+  $('kpi-monthly').textContent = (analytics.monthly_pct || 0) + '%';
+  $('kpi-monthly-sub').textContent = `${analytics.total_completed || 0} of ${analytics.total_possible || 0} completed`;
+  $('kpi-habits').textContent = analytics.num_habits || 0;
+  $('kpi-days').textContent = analytics.days_passed || 0;
+  $('kpi-days-sub').textContent = `days tracked this month`;
+  const hp = analytics.habit_progress || [];
+  const best = hp.length > 0 ? hp.reduce((a,b) => a.pct >= b.pct ? a : b) : null;
+  $('kpi-best').textContent = best && best.pct > 0 ? best.pct + '%' : '—';
+  $('kpi-best-sub').textContent = best && best.pct > 0 ? (best.emoji + ' ' + best.name) : 'No habits yet';
+}
+
+// ── Charts ──────────────────────────────────────
+function renderCharts() {
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } }
+  };
+
+  // Line chart
+  const lineCtx = $('line-chart');
+  if (lineCtx) {
+    if (lineChart) lineChart.destroy();
+    lineChart = new Chart(lineCtx.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: analytics.daily_labels || [],
+        datasets: [{
+          data: analytics.daily_values || [],
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,.08)',
+          fill: true, tension: 0.4,
+          pointRadius: 2, pointHoverRadius: 5, borderWidth: 2
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          y: { min: 0, max: 100, ticks: { callback: v => v+'%', font:{size:10} }, grid: { color:'#f0f0f0' } },
+          x: { ticks: { font:{size:9}, maxTicksLimit:15 }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  // Bar chart
+  const barCtx = $('bar-chart');
+  if (barCtx) {
+    if (barChart) barChart.destroy();
+    barChart = new Chart(barCtx.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: analytics.week_labels || [],
+        datasets: [{
+          data: analytics.weekly_values || [],
+          backgroundColor: ['rgba(13,148,136,.8)','rgba(13,148,136,.7)','rgba(13,148,136,.85)','rgba(13,148,136,.75)','rgba(13,148,136,.9)'],
+          borderRadius: 6, borderSkipped: false
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          y: { min:0, max:100, ticks: { callback: v => v+'%', font:{size:10} }, grid: { color:'#f0f0f0' } },
+          x: { ticks: { font:{size:11} }, grid: { display:false } }
+        }
+      }
+    });
+  }
+
+  // Pie chart
+  const pieCtx = $('pie-chart');
+  if (pieCtx) {
+    const completed = analytics.total_completed || 0;
+    const remaining = Math.max(0, (analytics.total_possible || 0) - completed);
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(pieCtx.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'Remaining'],
+        datasets: [{
+          data: [completed, remaining > 0 ? remaining : (completed === 0 ? 1 : 0)],
+          backgroundColor: ['#22c55e', '#e5e7eb'],
+          borderWidth: 0, hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { font:{size:11}, padding:10 } }
+        }
+      }
+    });
+  }
+}
+
+// ── Table ──────────────────────────────────────
+function renderTable() {
+  const container = $('table-container');
+  if (!container) return;
+
+  if (habits.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🌱</div><p>No habits yet!</p><small>Click "＋ Add Habit" to start tracking.</small></div>`;
+    return;
+  }
+
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = (today.getFullYear() === currentYear && today.getMonth()+1 === currentMonth);
+
+  const weeks = [];
+  for (let d = 1; d <= daysInMonth; d += 7) {
+    weeks.push({start: d, end: Math.min(d+6, daysInMonth)});
+  }
+
+  const compSet = new Set(completions.map(c => `${c.habit_id}_${c.completed_date}`));
+
+  let html = `<table class="habit-table"><thead>`;
+  html += `<tr><th class="habit-name-col" rowspan="2" style="vertical-align:bottom">HABITS</th>`;
+  for (let wi = 0; wi < weeks.length; wi++) {
+    html += `<th class="week-header" colspan="${weeks[wi].end - weeks[wi].start + 1}">WEEK ${wi+1}</th>`;
+  }
+  html += `<th rowspan="2" style="min-width:50px">DONE</th><th rowspan="2" style="min-width:45px">%</th><th rowspan="2" style="min-width:80px">PROGRESS</th><th rowspan="2" style="min-width:30px"></th></tr>`;
+  html += `<tr>`;
+  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(currentYear, currentMonth-1, d);
+    html += `<th style="min-width:26px;font-size:9px">${dayNames[dt.getDay()]}<br>${d}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for (const habit of habits) {
+    let done = 0;
+    const daysPassed = isCurrentMonth ? Math.min(today.getDate(), daysInMonth) : daysInMonth;
+
+    html += `<tr><td class="habit-name-cell"><div class="habit-name-inner"><span class="habit-emoji">${habit.emoji}</span><span>${habit.name}</span></div></td>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isFuture = isCurrentMonth && d > today.getDate();
+      const isChecked = compSet.has(`${habit.id}_${dateStr}`);
+      if (isChecked) done++;
+      const disabledAttr = isFuture ? 'disabled' : '';
+      const checkedAttr = isChecked ? 'checked' : '';
+      html += `<td><div class="cb-wrap"><input type="checkbox" class="habit-cb" ${checkedAttr} ${disabledAttr} onchange="toggleHabit(${habit.id},'${dateStr}',this)"></div></td>`;
+    }
+    const pct = daysPassed > 0 ? Math.round(done / daysPassed * 100) : 0;
+    const pctClass = pct >= 80 ? 'high' : pct >= 50 ? 'mid' : 'low';
+    html += `<td style="font-weight:600;text-align:center">${done}</td>
+      <td class="pct-cell ${pctClass}">${pct}%</td>
+      <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div></td>
+      <td><button class="del-btn" onclick="deleteHabit(${habit.id})" title="Delete habit">🗑</button></td></tr>`;
+  }
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+// ── Progress Cards ──────────────────────────────────────
+function renderProgress() {
+  const list = $('habit-progress-list');
+  const top = $('top-habits-list');
+  const hp = analytics.habit_progress || [];
+
+  const emptyHTML = `<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No habits to show yet.</div>`;
+  if (hp.length === 0) { list.innerHTML = emptyHTML; top.innerHTML = emptyHTML; return; }
+
+  list.innerHTML = hp.map(h => `
+    <div class="habit-progress-row">
+      <div class="habit-progress-name"><span>${h.emoji}</span><span>${h.name}</span></div>
+      <div class="habit-progress-bar"><div class="habit-progress-bar-fill" style="width:${h.pct}%"></div></div>
+      <div class="habit-progress-pct">${h.pct}%</div>
+    </div>`).join('');
+
+  const sorted = [...hp].sort((a,b) => b.pct - a.pct).slice(0,10);
+  top.innerHTML = sorted.map((h,i) => `
+    <div class="habit-progress-row">
+      <div class="habit-progress-name">
+        <span style="font-weight:700;color:var(--green-700);min-width:18px">${i+1}</span>
+        <span>${h.emoji}</span><span>${h.name}</span>
+      </div>
+      <div class="habit-progress-pct">${h.pct}%</div>
+    </div>`).join('');
+}
+
+// ── Toggle Habit ──────────────────────────────────────
+async function toggleHabit(habitId, dateStr, el) {
+  const prevChecked = el.checked;
+  try {
+    const r = await api('/api/completions/toggle', 'POST', {
+      habit_id: habitId, user_id: currentUser.id, date: dateStr
+    });
+    if (r.error) {
+      el.checked = !prevChecked; // revert
+      return;
+    }
+    el.checked = r.completed;
+    // Update local completions
+    if (r.completed) {
+      completions.push({ habit_id: habitId, user_id: currentUser.id, completed_date: dateStr });
+    } else {
+      completions = completions.filter(c => !(c.habit_id === habitId && c.completed_date === dateStr));
+    }
+    // Refresh analytics silently
+    const a = await api(`/api/analytics?user_id=${currentUser.id}&year=${currentYear}&month=${currentMonth}`);
+    if (a && !a.error) { analytics = a; renderKPIs(); renderCharts(); renderProgress(); }
+  } catch(e) {
+    el.checked = !prevChecked; // revert on error
+  }
+}
+
+// ── Add/Delete Habit ──────────────────────────────────────
+function openAddModal() {
+  $('add-modal').classList.add('open');
+  $('habit-name-input').value = '';
+  selectedEmoji = '✅';
+  document.querySelectorAll('.emoji-opt').forEach(e => {
+    e.classList.toggle('selected', e.dataset.emoji === '✅');
+  });
+  setTimeout(() => $('habit-name-input').focus(), 100);
+}
+
+function closeModal() { $('add-modal').classList.remove('open'); }
+
+function selectEmoji(el) {
+  document.querySelectorAll('.emoji-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedEmoji = el.dataset.emoji;
+}
+
+async function addHabit() {
+  const name = $('habit-name-input').value.trim();
+  if (!name) { $('habit-name-input').focus(); return; }
+  closeModal();
+  loading(true);
+  try {
+    const r = await api('/api/habits', 'POST', {
+      user_id: currentUser.id, name, emoji: selectedEmoji, goal: 30
+    });
+    if (!r.error) await loadAll();
+  } finally {
+    loading(false);
+  }
+}
+
+async function deleteHabit(id) {
+  if (!confirm('Delete this habit and all its completion data?')) return;
+  loading(true);
+  try {
+    await api(`/api/habits/${id}`, 'DELETE');
+    await loadAll();
+  } finally {
+    loading(false);
+  }
+}
+
+// ── Keyboard shortcuts ──────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if ($('add-modal').classList.contains('open')) addHabit();
+    else if ($('app-screen').style.display === 'none') {
+      const activeTab = document.querySelector('.auth-tab.active');
+      if (activeTab && activeTab.textContent.includes('Sign In')) doLogin();
+      else doSignup();
+    }
+  }
+  if (e.key === 'Escape') closeModal();
+});
+
+$('add-modal').addEventListener('click', e => {
+  if (e.target === $('add-modal')) closeModal();
+});
+</script>
+</body>
+</html>
