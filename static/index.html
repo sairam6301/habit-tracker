@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HabitFlow — Daily Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js'"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 <style>
 /* ─── THEME VARIABLES ─────────────────────────────── */
 :root {
@@ -200,8 +202,213 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .empty-state { text-align:center; padding:40px 20px; color:var(--text-muted); }
 .empty-state .empty-icon { font-size:44px; margin-bottom:10px; }
 
-@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes spin    { to { transform:rotate(360deg); } }
 @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+/* ─── NEW: Animations ───────────────────────────── */
+@keyframes fadeInScale {
+  from { opacity:0; transform:scale(0.94) translateY(10px); }
+  to   { opacity:1; transform:scale(1)    translateY(0); }
+}
+@keyframes progressFill {
+  from { width:0 !important; }
+}
+@keyframes chartPop {
+  from { opacity:0; transform:scaleY(0.6); transform-origin:bottom; }
+  to   { opacity:1; transform:scaleY(1); }
+}
+@keyframes streakPulse {
+  0%,100% { transform:scale(1); }
+  50%      { transform:scale(1.18); }
+}
+@keyframes ripple {
+  to { transform:scale(4); opacity:0; }
+}
+
+/* KPI cards animate in */
+.kpi-card {
+  animation: fadeInScale .45s ease both;
+  will-change: transform, opacity;
+}
+.kpi-card:nth-child(1) { animation-delay:.05s }
+.kpi-card:nth-child(2) { animation-delay:.10s }
+.kpi-card:nth-child(3) { animation-delay:.15s }
+.kpi-card:nth-child(4) { animation-delay:.20s }
+.kpi-card:nth-child(5) { animation-delay:.25s }
+
+/* Chart cards animate in */
+.chart-card {
+  animation: fadeInScale .5s ease both;
+  will-change: transform, opacity;
+}
+.charts-row .chart-card:nth-child(1) { animation-delay:.1s }
+.charts-row .chart-card:nth-child(2) { animation-delay:.18s }
+.charts-row .chart-card:nth-child(3) { animation-delay:.26s }
+
+/* Progress bars animate fill */
+.habit-progress-bar-fill,
+.progress-bar-fill {
+  animation: progressFill .8s cubic-bezier(.4,0,.2,1) both;
+}
+
+/* Streak badge pulses when hot */
+.streak-badge.hot { animation: streakPulse 1.6s ease-in-out infinite; }
+
+/* Table rows stagger in */
+.habit-table tbody tr {
+  animation: fadeInScale .3s ease both;
+}
+
+/* Button ripple effect */
+.btn-primary, .btn-add-habit, .btn-save, .btn-export-csv, .btn-export-pdf {
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary:active::after,
+.btn-add-habit:active::after,
+.btn-save:active::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  background: rgba(255,255,255,.4);
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: ripple .5s linear;
+  pointer-events: none;
+}
+
+/* Enhanced button hover transitions */
+.btn-add-habit  { transition: transform .2s, box-shadow .2s, background .2s; }
+.btn-export-csv { transition: background .2s, color .2s, transform .15s; }
+.btn-export-pdf { transition: background .2s, color .2s, transform .15s; }
+.btn-export-csv:hover, .btn-export-pdf:hover { transform: translateY(-1px); }
+.topbar-btn { transition: background .2s, transform .15s; }
+.topbar-btn:hover { transform: translateY(-1px); }
+
+/* KPI card hover lift */
+.kpi-card { transition: transform .2s, box-shadow .2s; }
+.kpi-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+
+/* Chart card hover */
+.chart-card { transition: box-shadow .2s; }
+.chart-card:hover { box-shadow: var(--shadow-lg); }
+
+/* Table row hover smooth */
+.habit-table tbody tr { transition: background .15s; }
+
+/* Edit/delete button transitions */
+.edit-btn, .del-btn { transition: all .18s; }
+
+/* Modal open animation */
+.modal { transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s; }
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+/* Filter chips */
+.filter-chip { transition: all .18s cubic-bezier(.4,0,.2,1); }
+.filter-chip:hover { transform: translateY(-1px); }
+
+/* ─── NEW: Google OAuth Button ───────────────────── */
+.google-divider {
+  display:flex; align-items:center; gap:10px; margin:18px 0;
+}
+.google-divider::before,
+.google-divider::after {
+  content:''; flex:1; height:1px; background:var(--border, #e5e7eb);
+}
+.google-divider span { font-size:11px; color:#9ca3af; font-weight:600; white-space:nowrap; }
+
+.btn-google {
+  width:100%; padding:11px 16px;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  background:white; color:#374151;
+  border:1.5px solid #e5e7eb; border-radius:8px;
+  font-size:14px; font-weight:600; font-family:inherit;
+  cursor:pointer; transition:all .2s;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.btn-google:hover {
+  background:#f9fafb; border-color:#d1d5db;
+  box-shadow:0 3px 10px rgba(0,0,0,.1);
+  transform:translateY(-1px);
+}
+.btn-google:active { transform:translateY(0); }
+.btn-google svg { flex-shrink:0; }
+.google-note {
+  font-size:11px; color:#9ca3af; text-align:center;
+  margin-top:10px; display:none;
+}
+.google-note.show { display:block; color:#dc2626; }
+
+/* ─── CALENDAR ───────────────────────────── */
+.calendar-modal { width:95vw; max-width:1100px; max-height:88vh; overflow-y:auto; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.cal-nav-btn { background:var(--green-100); border:none; color:var(--green-800); font-size:20px; width:36px; height:36px; border-radius:50%; cursor:pointer; font-weight:700; transition:background .2s; }
+.cal-nav-btn:hover { background:var(--green-300); }
+.cal-year-label { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+@media(max-width:900px) { .cal-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:500px) { .cal-grid { grid-template-columns:1fr; } }
+.cal-month { background:var(--bg2); border-radius:12px; padding:12px; border:1px solid var(--border); }
+.cal-month-name { font-weight:700; font-size:12px; color:var(--green-700); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.cal-days-header { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }
+.cal-day-name { font-size:9px; font-weight:600; color:var(--text-muted); text-align:center; padding:2px 0; }
+.cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day { aspect-ratio:1; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; cursor:default; transition:transform .15s; position:relative; }
+.cal-day:hover { transform:scale(1.15); z-index:2; }
+.cal-day.empty { background:transparent; }
+.cal-day.no-habits { background:var(--border); color:var(--text-muted); }
+.cal-day.pct-0  { background:#f3f4f6; color:#9ca3af; }
+.cal-day.pct-low  { background:#fef3c7; color:#d97706; }
+.cal-day.pct-mid  { background:#bbf7d0; color:#15803d; }
+.cal-day.pct-high { background:#16a34a; color:white; }
+.cal-day.pct-full { background:#166534; color:white; }
+.cal-day.today { outline:2px solid #f59e0b; outline-offset:1px; }
+.cal-day.future { background:var(--bg); color:var(--text-muted); opacity:.4; }
+.cal-legend { display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; font-size:11px; color:var(--text-muted); }
+.cal-legend-item { display:flex; align-items:center; gap:4px; }
+.cal-legend-box { width:12px; height:12px; border-radius:3px; }
+
+/* ─── DELETE ACCOUNT MODAL ───────────────────────────── */
+.delete-account-modal { max-width:420px; text-align:center; }
+.delete-icon { font-size:52px; margin-bottom:12px; }
+.delete-warning { background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px; margin:16px 0; font-size:13px; color:#dc2626; line-height:1.5; }
+.btn-danger { flex:2; padding:10px; background:linear-gradient(135deg,#dc2626,#ef4444); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .2s; }
+.btn-danger:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(220,38,38,.4); }
+
+/* ─── Calendar ───────────────────────────────────── */
+.calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-header { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; }
+.cal-day-name { text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; padding:4px 0; }
+.cal-day { aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid transparent; transition:all .15s; position:relative; flex-direction:column; gap:1px; }
+.cal-day.empty { background:transparent; cursor:default; }
+.cal-day.other-month { opacity:.3; }
+.cal-day.today { border-color:var(--green-500) !important; color:var(--green-600); font-weight:800; }
+.cal-day.has-completions { background:var(--green-100); border-color:var(--green-300); }
+.cal-day.all-done { background:linear-gradient(135deg,var(--green-500),var(--green-400)); color:white; border-color:var(--green-600); }
+.cal-day.selected { box-shadow:0 0 0 2px var(--green-500); }
+.cal-day:not(.empty):hover { transform:scale(1.08); box-shadow:var(--shadow); }
+.cal-dot { width:4px; height:4px; border-radius:50%; background:currentColor; opacity:.7; }
+.cal-pct { font-size:8px; opacity:.8; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-nav button { background:var(--bg2); border:1px solid var(--border); color:var(--text); padding:5px 12px; border-radius:8px; cursor:pointer; font-size:14px; transition:all .15s; }
+.cal-nav button:hover { background:var(--green-500); color:white; border-color:var(--green-500); }
+.cal-nav h3 { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+.cal-legend { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
+.cal-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); }
+.cal-legend-dot { width:10px; height:10px; border-radius:3px; }
+.cal-day-detail { margin-top:16px; padding:14px; background:var(--bg2); border-radius:10px; border:1px solid var(--border); min-height:60px; }
+.cal-day-detail h4 { font-size:13px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.cal-habit-item { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.cal-habit-item:last-child { border-bottom:none; }
+
+/* ─── Delete Account Modal ───────────────────────── */
+.danger-zone { background:#fef2f2; border:1.5px solid #fecaca; border-radius:10px; padding:14px 16px; margin-bottom:16px; }
+.danger-zone p { font-size:13px; color:#dc2626; margin-bottom:8px; }
+.danger-zone ul { font-size:12px; color:#991b1b; padding-left:16px; }
+.danger-zone ul li { margin-bottom:4px; }
+.btn-danger { width:100%; padding:12px; background:linear-gradient(135deg,#dc2626,#ef4444); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; transition:all .2s; }
+.btn-danger:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(220,38,38,.35); }
 
 @media (max-width:1100px) {
   .kpi-row { grid-template-columns:repeat(3,1fr); }
@@ -237,12 +444,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
       <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+      <div class="google-divider"><span>OR CONTINUE WITH</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+      </button>
+      <div class="google-note" id="google-note"></div>
     </div>
     <div id="signup-form" style="display:none">
       <div class="form-group"><label>Username</label><input type="text" id="signup-username" placeholder="yourname"></div>
       <div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com"></div>
       <div class="form-group"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters"></div>
       <button class="btn-primary" onclick="doSignup()">Create Account →</button>
+      <div class="google-divider"><span>OR CONTINUE WITH</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Sign up with Google
+      </button>
     </div>
   </div>
 </div>
@@ -258,9 +476,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <button onclick="changeMonth(1)">&#8250;</button>
       </div>
       <button class="topbar-btn" onclick="toggleDark()" id="dark-btn">🌙 Dark</button>
+      <button class="topbar-btn" onclick="openCalendarModal()">📅 Calendar</button>
       <button class="topbar-btn" onclick="openReminderModal()">🔔 Reminder</button>
       <div class="user-avatar" id="user-avatar">U</div>
       <button class="topbar-btn" onclick="logout()">Logout</button>
+      <button class="topbar-btn" onclick="openDeleteAccountModal()" style="background:rgba(239,68,68,.25);color:#fca5a5;">🗑 Delete Account</button>
     </div>
   </div>
 
@@ -285,23 +505,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     </div>
 
     <!-- KPI Row -->
-    <div class="kpi-row">
-      <div class="kpi-card green"><div class="kpi-icon">📅</div><div class="kpi-label">Monthly Progress</div><div class="kpi-value" id="kpi-monthly">0%</div><div class="kpi-sub" id="kpi-monthly-sub">0 of 0 completed</div></div>
-      <div class="kpi-card teal"><div class="kpi-icon">🎯</div><div class="kpi-label">Total Habits</div><div class="kpi-value" id="kpi-habits">0</div><div class="kpi-sub">habits tracked</div></div>
-      <div class="kpi-card amber"><div class="kpi-icon">🔥</div><div class="kpi-label">Best Streak</div><div class="kpi-value" id="kpi-streak">0</div><div class="kpi-sub" id="kpi-streak-sub">days in a row</div></div>
-      <div class="kpi-card rose"><div class="kpi-icon">⭐</div><div class="kpi-label">Best Habit</div><div class="kpi-value" id="kpi-best">—</div><div class="kpi-sub" id="kpi-best-sub">top performer</div></div>
-      <div class="kpi-card purple"><div class="kpi-icon">📆</div><div class="kpi-label">Days Tracked</div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-sub">days this month</div></div>
+    <div class="kpi-row" id="kpi-row">
+      <div class="kpi-card green" data-aos="fade-up" data-aos-delay="0"><div class="kpi-icon">📅</div><div class="kpi-label">Monthly Progress</div><div class="kpi-value" id="kpi-monthly">0%</div><div class="kpi-sub" id="kpi-monthly-sub">0 of 0 completed</div></div>
+      <div class="kpi-card teal"  data-aos="fade-up" data-aos-delay="60"><div class="kpi-icon">🎯</div><div class="kpi-label">Total Habits</div><div class="kpi-value" id="kpi-habits">0</div><div class="kpi-sub">habits tracked</div></div>
+      <div class="kpi-card amber" data-aos="fade-up" data-aos-delay="120"><div class="kpi-icon">🔥</div><div class="kpi-label">Best Ever Streak</div><div class="kpi-value" id="kpi-streak">0</div><div class="kpi-sub" id="kpi-streak-sub">all-time best</div></div>
+      <div class="kpi-card rose"  data-aos="fade-up" data-aos-delay="180"><div class="kpi-icon">⚡</div><div class="kpi-label">Current Streak</div><div class="kpi-value" id="kpi-current-streak">0</div><div class="kpi-sub" id="kpi-current-streak-sub">days active now</div></div>
+      <div class="kpi-card purple" data-aos="fade-up" data-aos-delay="240"><div class="kpi-icon">⭐</div><div class="kpi-label">Best Habit</div><div class="kpi-value" id="kpi-best">—</div><div class="kpi-sub" id="kpi-best-sub">top performer</div></div>
+      <div class="kpi-card green" style="animation-delay:.3s" data-aos="fade-up" data-aos-delay="300"><div class="kpi-icon">📆</div><div class="kpi-label">Days Tracked</div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-sub">days this month</div></div>
     </div>
 
     <!-- Charts -->
     <div class="charts-row">
-      <div class="chart-card"><div class="chart-title"><div class="dot"></div>Daily Performance</div><div class="chart-container"><canvas id="line-chart"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title"><div class="dot" style="background:#0d9488"></div>Weekly Progress</div><div class="chart-container"><canvas id="bar-chart"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title"><div class="dot" style="background:#d97706"></div>Monthly Overview</div><div class="chart-container" style="display:flex;align-items:center;justify-content:center"><canvas id="pie-chart" style="max-height:160px"></canvas></div></div>
+      <div class="chart-card" data-aos="fade-up" data-aos-delay="80"><div class="chart-title"><div class="dot"></div>Daily Performance</div><div class="chart-container"><canvas id="line-chart"></canvas></div></div>
+      <div class="chart-card" data-aos="fade-up" data-aos-delay="140"><div class="chart-title"><div class="dot" style="background:#0d9488"></div>Weekly Progress</div><div class="chart-container"><canvas id="bar-chart"></canvas></div></div>
+      <div class="chart-card" data-aos="fade-up" data-aos-delay="200"><div class="chart-title"><div class="dot" style="background:#d97706"></div>Monthly Overview</div><div class="chart-container" style="display:flex;align-items:center;justify-content:center"><canvas id="pie-chart" style="max-height:160px"></canvas></div></div>
     </div>
 
     <!-- Habit Table -->
-    <div class="table-section">
+    <div class="table-section" data-aos="fade-up" data-aos-delay="60">
       <div class="table-header">
         <div class="table-header-left">📋 Habit Tracker Grid — <span id="table-month-label">March 2026</span></div>
         <div class="table-actions">
@@ -315,13 +536,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
     <!-- Progress + Top Habits -->
     <div class="progress-section">
-      <div class="progress-card"><div class="progress-card-title">📊 Habit Progress (This Month)</div><div id="habit-progress-list"></div></div>
-      <div class="progress-card"><div class="progress-card-title">🏆 Top Habits by Completion</div><div id="top-habits-list"></div></div>
+      <div class="progress-card" data-aos="fade-right"><div class="progress-card-title">📊 Habit Progress (This Month)</div><div id="habit-progress-list"></div></div>
+      <div class="progress-card" data-aos="fade-left"><div class="progress-card-title">🏆 Top Habits by Completion</div><div id="top-habits-list"></div></div>
     </div>
 
   </div>
 </div>
 
+<!-- ─── CALENDAR MODAL ─────────────────────────────────────────── -->
 <!-- ─── ADD / EDIT HABIT MODAL ─────────────────────────────────────────── -->
 <div class="modal-overlay" id="habit-modal">
   <div class="modal">
@@ -380,6 +602,53 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('reminder-modal')">Cancel</button>
       <button class="btn-save" onclick="saveReminder()">Set Reminder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CALENDAR MODAL ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="calendar-modal">
+  <div class="modal" style="width:98vw;max-width:1100px;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0">📅 Habit Calendar</h2>
+      <button class="btn-cancel" onclick="closeModal('calendar-modal')" style="width:auto;padding:6px 16px">✕ Close</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px">
+      <button class="cal-nav-btn" onclick="changeCalYear(-1)">&#8249;</button>
+      <span id="cal-year-label" style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text)">2026</span>
+      <button class="cal-nav-btn" onclick="changeCalYear(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid">
+      <div style="text-align:center;padding:40px;color:var(--text-muted)">Loading...</div>
+    </div>
+    <div class="cal-legend" style="margin-top:16px">
+      <span style="font-size:11px;color:var(--text-muted)">Legend:</span>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> 0%</div>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="background:#fef3c7"></div> 1–49%</div>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="background:#bbf7d0"></div> 50–79%</div>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="background:#16a34a"></div> 80–99%</div>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="background:#166534"></div> 100% 🎉</div>
+      <div class="cal-legend-item"><div class="cal-legend-box" style="outline:2px solid #f59e0b;outline-offset:1px;background:transparent"></div> Today</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DELETE ACCOUNT MODAL ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-account-modal">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:52px;margin-bottom:12px">⚠️</div>
+    <h2 style="color:#dc2626;margin-bottom:12px">Delete Account</h2>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:#991b1b;text-align:left;line-height:1.6">
+      This will <strong>permanently delete</strong> your account, all habits, and all completion history.<br><br>
+      <strong>This cannot be undone!</strong>
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label style="color:#dc2626">Type <strong>DELETE</strong> to confirm:</label>
+      <input type="text" id="delete-confirm-input" placeholder="Type DELETE here" style="text-align:center;font-weight:700;letter-spacing:.1em;border-color:#fca5a5">
+    </div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeModal('delete-account-modal')">Cancel</button>
+      <button class="btn-danger" onclick="confirmDeleteAccount()">🗑 Delete My Account</button>
     </div>
   </div>
 </div>
@@ -472,9 +741,55 @@ function initApp(user) {
   currentUser = user;
   $('auth-screen').style.display = 'none';
   $('app-screen').style.display = 'block';
-  $('user-avatar').textContent = user.username[0].toUpperCase();
+  // Show avatar: Google profile pic or initial letter
+  const av = $('user-avatar');
+  if (user.avatar_url) {
+    av.innerHTML = `<img src="${user.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentElement.textContent='${user.username[0].toUpperCase()}'">`;
+  } else {
+    av.textContent = user.username[0].toUpperCase();
+  }
   loadReminderState();
+  // Re-init AOS for newly shown elements
+  if (typeof AOS !== 'undefined') AOS.refresh();
   setTimeout(() => loadAll(), 50);
+}
+
+// ── Google OAuth ──────────────────────────────────────
+function doGoogleLogin() {
+  // Redirect to Flask backend OAuth route
+  window.location.href = '/auth/google';
+}
+
+function handleGoogleCallback() {
+  // Check for google_auth payload in URL (set by Flask callback redirect)
+  const params = new URLSearchParams(window.location.search);
+  const payload = params.get('google_auth');
+  const error   = params.get('error');
+
+  if (error) {
+    const msgs = {
+      oauth_unavailable: 'Google OAuth not configured on server. Install authlib and set credentials.',
+      oauth_failed:      'Google sign-in failed. Please try again.',
+      no_email:          'Could not retrieve email from Google.',
+    };
+    // Show auth screen with error
+    setTimeout(() => showAuthError(msgs[error] || 'Google sign-in error: ' + error), 100);
+    // Clean URL
+    window.history.replaceState({}, '', '/');
+    return;
+  }
+
+  if (payload) {
+    try {
+      const user = JSON.parse(atob(payload.replace(/-/g,'+').replace(/_/g,'/')));
+      // Clean URL before entering app
+      window.history.replaceState({}, '', '/');
+      initApp(user);
+    } catch(e) {
+      console.error('Google auth payload parse error:', e);
+      window.history.replaceState({}, '', '/');
+    }
+  }
 }
 
 function logout() {
@@ -485,6 +800,103 @@ function logout() {
   $('app-screen').style.display = 'none';
   $('login-email').value=''; $('login-password').value='';
   $('auth-error').style.display='none';
+}
+
+// ── Delete Account ──────────────────────────────────────
+function openDeleteAccountModal() {
+  $('delete-confirm-input').value = '';
+  $('delete-account-modal').classList.add('open');
+  setTimeout(() => $('delete-confirm-input').focus(), 100);
+}
+
+async function confirmDeleteAccount() {
+  const input = $('delete-confirm-input').value.trim();
+  if (input !== 'DELETE') {
+    alert('❌ Please type DELETE in capital letters exactly.');
+    return;
+  }
+  if (!confirm('Last chance — permanently delete your account and ALL data?')) return;
+  loading(true);
+  try {
+    const r = await api('/api/delete-account', 'DELETE', { user_id: currentUser.id });
+    if (r.success) {
+      $('delete-account-modal').classList.remove('open');
+      alert('✅ Your account has been permanently deleted.');
+      logout();
+    } else {
+      alert('Error: ' + (r.error || 'Failed to delete account.'));
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally { loading(false); }
+}
+
+async function deleteAccount() { await confirmDeleteAccount(); }
+
+// ── Calendar ──────────────────────────────────────
+let calYear = new Date().getFullYear();
+let calendarData = {};
+
+function openCalendarModal() {
+  calYear = new Date().getFullYear();
+  $('calendar-modal').classList.add('open');
+  loadCalendarYear();
+}
+
+function changeCalYear(dir) {
+  calYear += dir;
+  loadCalendarYear();
+}
+
+async function loadCalendarYear() {
+  const grid = $('cal-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Loading...</div>';
+  $('cal-year-label').textContent = calYear;
+
+  // Load all 12 months in parallel
+  const promises = [];
+  for (let m = 1; m <= 12; m++) {
+    promises.push(api(`/api/calendar?user_id=${currentUser.id}&year=${calYear}&month=${m}`));
+  }
+  const results = await Promise.all(promises);
+
+  const monthNames = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+  const dayNames = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+  grid.innerHTML = results.map((data, mi) => {
+    if (data.error || !data.calendar_days) return '';
+    const month = mi + 1;
+    const firstDay = new Date(calYear, mi, 1).getDay(); // 0=Sun
+    // Convert Sunday=0 to Monday=0 format
+    const offset = (firstDay + 6) % 7;
+
+    let daysHtml = '';
+    // Empty cells before first day
+    for (let i = 0; i < offset; i++) daysHtml += '<div class="cal-day empty"></div>';
+
+    for (const d of data.calendar_days) {
+      let cls = 'cal-day';
+      if (d.is_future) cls += ' future';
+      else if (d.total === 0) cls += ' no-habits';
+      else if (d.pct === 100) cls += ' pct-full';
+      else if (d.pct >= 80) cls += ' pct-high';
+      else if (d.pct >= 50) cls += ' pct-mid';
+      else if (d.pct > 0)  cls += ' pct-low';
+      else cls += ' pct-0';
+      if (d.is_today) cls += ' today';
+      const title = d.is_future ? 'Future' : `${d.done}/${d.total} habits (${d.pct}%)`;
+      daysHtml += `<div class="${cls}" title="${d.date}: ${title}">${d.day}</div>`;
+    }
+
+    return `
+      <div class="cal-month">
+        <div class="cal-month-name">${monthNames[mi]}</div>
+        <div class="cal-days-header">${dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('')}</div>
+        <div class="cal-days">${daysHtml}</div>
+      </div>`;
+  }).join('');
 }
 
 // ── Month Nav ──────────────────────────────────────
@@ -537,11 +949,28 @@ function renderKPIs() {
   $('kpi-monthly-sub').textContent = `${analytics.total_completed||0} of ${analytics.total_possible||0} completed`;
   $('kpi-habits').textContent = analytics.num_habits||0;
   $('kpi-days').textContent = analytics.days_passed||0;
+
+  const streakSource = habits.length > 0 ? habits : (analytics.habit_progress||[]);
+
+  // Best EVER streak — max of best_streak across all habits
+  const bestEver = streakSource.reduce((m,h) => Math.max(m, h.best_streak||h.streak||0), 0);
+  const bestEverHabit = streakSource.find(h => (h.best_streak||h.streak||0) === bestEver);
+  $('kpi-streak').textContent = bestEver;
+  $('kpi-streak-sub').textContent = bestEver > 0 && bestEverHabit
+    ? bestEverHabit.emoji + ' ' + bestEverHabit.name
+    : 'No streaks yet';
+
+  // Current streak — max of streak (consecutive days up to today)
+  const currentBest = streakSource.reduce((m,h) => Math.max(m, h.streak||0), 0);
+  const currentHabit = streakSource.find(h => (h.streak||0) === currentBest);
+  if ($('kpi-current-streak')) {
+    $('kpi-current-streak').textContent = currentBest;
+    $('kpi-current-streak-sub').textContent = currentBest > 0 && currentHabit
+      ? currentHabit.emoji + ' ' + currentHabit.name
+      : 'No active streak';
+  }
+
   const hp = analytics.habit_progress||[];
-  const bestStreak = hp.reduce((m,h) => Math.max(m, h.streak||0), 0);
-  const bestStreakHabit = hp.find(h => (h.streak||0) === bestStreak);
-  $('kpi-streak').textContent = bestStreak;
-  $('kpi-streak-sub').textContent = bestStreakHabit ? bestStreakHabit.emoji+' '+bestStreakHabit.name : 'No streaks yet';
   const best = hp.length>0 ? hp.reduce((a,b)=>a.pct>=b.pct?a:b) : null;
   $('kpi-best').textContent = best&&best.pct>0 ? best.pct+'%' : '—';
   $('kpi-best-sub').textContent = best&&best.pct>0 ? best.emoji+' '+best.name : 'No habits yet';
@@ -709,25 +1138,35 @@ function renderProgress() {
   const empty = `<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No habits to show.</div>`;
   if (hp.length===0) { list.innerHTML=empty; top.innerHTML=empty; return; }
 
-  list.innerHTML = hp.map(h => `
+  // Always get streak from habits[] which is always kept in sync with DB
+  const getStreak = (id) => { const h = habits.find(h=>h.id===id); return h ? (h.streak||0) : 0; };
+
+  list.innerHTML = hp.map(h => {
+    const streak = getStreak(h.id);
+    return `
     <div class="habit-progress-row">
-      <div class="habit-progress-name"><span>${h.emoji}</span><span>${h.name}</span>${h.streak>0?`<span class="streak-badge ${h.streak>=7?'hot':''}" style="font-size:9px">🔥${h.streak}</span>`:''}
+      <div class="habit-progress-name"><span>${h.emoji}</span><span>${h.name}</span>${streak>0?`<span class="streak-badge ${streak>=7?'hot':''}" style="font-size:9px">🔥${streak}</span>`:''}
       </div>
       <div class="habit-progress-bar"><div class="habit-progress-bar-fill" style="width:${h.pct}%"></div></div>
       <div class="habit-progress-pct">${h.pct}%</div>
       <button class="del-btn" onclick="deleteHabit(${h.id})" style="padding:2px 6px;font-size:11px">🗑</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const sorted = [...hp].sort((a,b)=>b.pct-a.pct).slice(0,10);
-  top.innerHTML = sorted.map((h,i) => `
+  top.innerHTML = sorted.map((h,i) => {
+    const streak = getStreak(h.id);
+    return `
     <div class="habit-progress-row">
       <div class="habit-progress-name">
         <span style="font-weight:700;color:var(--green-700);min-width:16px">${i+1}</span>
         <span>${h.emoji}</span><span>${h.name}</span>
         <span class="badge badge-diff ${h.difficulty||'Medium'}">${h.difficulty||'Medium'}</span>
+        ${streak>0?`<span class="streak-badge ${streak>=7?'hot':''}" style="font-size:9px">🔥${streak}</span>`:''}
       </div>
       <div class="habit-progress-pct">${h.pct}%</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── Toggle ──────────────────────────────────────
@@ -737,14 +1176,36 @@ async function toggleHabit(habitId, dateStr, el) {
     const r = await api('/api/completions/toggle','POST',{habit_id:habitId,user_id:currentUser.id,date:dateStr});
     if (r.error) { el.checked=!prev; return; }
     el.checked = r.completed;
+
+    // Update local completions list
     if (r.completed) completions.push({habit_id:habitId,user_id:currentUser.id,completed_date:dateStr});
     else completions = completions.filter(c=>!(c.habit_id===habitId&&c.completed_date===dateStr));
-    // Update streak on the habit object
-    const h = habits.find(h=>h.id===habitId);
-    if (h) h.streak = r.streak||0;
-    const a = await api(`/api/analytics?user_id=${currentUser.id}&year=${currentYear}&month=${currentMonth}`);
-    if (a&&!a.error) { analytics=a; renderKPIs(); renderCharts(); renderProgress(); }
+
+    // Re-fetch BOTH habits (for fresh streaks) AND analytics (for counts/progress) in parallel
+    const [freshHabits, freshAnalytics] = await Promise.all([
+      api(`/api/habits?user_id=${currentUser.id}`),
+      api(`/api/analytics?user_id=${currentUser.id}&year=${currentYear}&month=${currentMonth}`)
+    ]);
+
+    // Update habits array with fresh streak values from DB
+    if (Array.isArray(freshHabits)) habits = freshHabits;
+
+    // Stamp fresh streaks from habits[] into analytics.habit_progress[]
+    // so renderKPIs() and renderProgress() show correct values
+    if (freshAnalytics && !freshAnalytics.error) {
+      if (freshAnalytics.habit_progress && Array.isArray(habits)) {
+        freshAnalytics.habit_progress.forEach(hp => {
+          const h = habits.find(h => h.id === hp.id);
+          if (h) hp.streak = h.streak || 0;
+        });
+      }
+      analytics = freshAnalytics;
+    }
+
+    renderKPIs();
+    renderCharts();
     renderTable();
+    renderProgress();
   } catch(e) { el.checked=!prev; }
 }
 
@@ -914,11 +1375,28 @@ function exportPDF() {
 
 // ── Keyboard ──────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeModal('habit-modal'); closeModal('reminder-modal'); }
+  if (e.key==='Escape') { closeModal('habit-modal'); closeModal('reminder-modal'); closeModal('delete-account-modal'); }
   if (e.key==='Enter' && $('habit-modal').classList.contains('open')) saveHabit();
+  if (e.key==='Enter' && $('delete-account-modal').classList.contains('open')) deleteAccount();
 });
 $('habit-modal').addEventListener('click', e => { if(e.target===$('habit-modal')) closeModal('habit-modal'); });
 $('reminder-modal').addEventListener('click', e => { if(e.target===$('reminder-modal')) closeModal('reminder-modal'); });
+$('delete-account-modal').addEventListener('click', e => { if(e.target===$('delete-account-modal')) closeModal('delete-account-modal'); });
+
+// ── AOS Init ──────────────────────────────────────
+if (typeof AOS !== 'undefined') {
+  AOS.init({
+    duration: 420,      // ms
+    easing: 'ease-out-cubic',
+    once: true,         // animate once — no re-trigger on scroll back
+    offset: 40,
+    disable: 'mobile',  // disable on mobile to keep it snappy
+  });
+}
+
+// ── Google OAuth Callback Handler ──────────────────────────────────────
+// Runs on page load — checks if we've just returned from Google OAuth
+handleGoogleCallback();
 </script>
 </body>
 </html>

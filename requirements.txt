@@ -1,3 +1,6 @@
 flask>=2.0.0
-werkzeug
+werkzeug>=2.0.0
+authlib>=1.2.0
+apscheduler>=3.10.0
+requests>=2.28.0
 gunicorn
