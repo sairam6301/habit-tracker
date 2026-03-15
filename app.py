@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 import sqlite3
-import hashlib
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 import io
 from datetime import datetime, date, timedelta
@@ -12,7 +12,7 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 DB_PATH = os.path.join(BASE_DIR, 'habits.db')
 
 app = Flask(__name__, static_folder=STATIC_DIR)
-app.secret_key = 'habittracker2025secret'
+app.secret_key = os.environ.get('HABITFLOW_SECRET_KEY', 'habittracker-dev-fallback-key-change-in-production')
 
 @app.after_request
 def add_cors(response):
@@ -83,9 +83,6 @@ def init_db():
     except: pass
     conn.close()
 
-def hash_pw(p):
-    return hashlib.sha256(p.encode()).hexdigest()
-
 def calc_streak(habit_id, conn):
     """Calculate current streak for a habit."""
     rows = conn.execute(
@@ -142,7 +139,7 @@ def signup():
         conn = get_db()
         try:
             conn.execute('INSERT INTO users (username,email,password) VALUES (?,?,?)',
-                         (username, email, hash_pw(password)))
+                         (username, email, generate_password_hash(password)))
             conn.commit()
             user = conn.execute('SELECT * FROM users WHERE email=?', (email,)).fetchone()
             return jsonify({'success': True, 'user': {'id': user['id'], 'username': user['username'], 'email': user['email']}})
@@ -162,10 +159,9 @@ def login():
         if not email or not password:
             return jsonify({'error': 'Email and password required'}), 400
         conn = get_db()
-        user = conn.execute('SELECT * FROM users WHERE email=? AND password=?',
-                            (email, hash_pw(password))).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE email=?', (email,)).fetchone()
         conn.close()
-        if user:
+        if user and check_password_hash(user['password'], password):
             return jsonify({'success': True, 'user': {'id': user['id'], 'username': user['username'], 'email': user['email']}})
         return jsonify({'error': 'Invalid email or password'}), 401
     except Exception as e:

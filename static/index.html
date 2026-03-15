@@ -116,16 +116,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .btn-export-pdf:hover { background:#7c3aed; color:white; }
 
 .habit-table-wrap { overflow-x:auto; }
-.habit-table { width:100%; border-collapse:collapse; min-width:900px; }
+.habit-table { width:100%; border-collapse:collapse; min-width:900px; table-layout:auto; }
 .habit-table thead tr { background:var(--green-800); }
 .habit-table thead th { color:white; font-weight:600; padding:9px 7px; font-size:10px; text-align:center; white-space:nowrap; border:1px solid var(--green-700); }
-.habit-table thead th.habit-name-col { text-align:left; padding-left:14px; min-width:200px; position:sticky; left:0; z-index:2; background:var(--green-800); }
+.habit-table thead th.habit-name-col { text-align:left; padding-left:14px; width:190px; min-width:190px; max-width:190px; position:sticky; left:0; z-index:2; background:var(--green-800); box-shadow:2px 0 6px rgba(0,0,0,.15); }
 .habit-table thead th.week-header { background:var(--green-700); font-size:9px; letter-spacing:.04em; }
-.habit-table tbody tr:nth-child(even) { background:var(--green-50); }
-.habit-table tbody tr:hover { background:var(--green-100); }
+.habit-table tbody tr:nth-child(even) td:not(.habit-name-cell) { background:var(--green-50); }
+.habit-table tbody tr:hover td:not(.habit-name-cell) { background:var(--green-100); }
 .habit-table td { padding:7px; text-align:center; border:1px solid var(--border2); font-size:12px; color:var(--text); }
-.habit-table td.habit-name-cell { text-align:left; padding-left:14px; font-weight:500; position:sticky; left:0; background:inherit; z-index:1; white-space:nowrap; }
-.habit-name-inner { display:flex; align-items:center; gap:7px; }
+.habit-table tbody tr:nth-child(odd)  .habit-name-cell { background: var(--card); }
+.habit-table tbody tr:nth-child(even) .habit-name-cell { background: var(--green-50); }
+.habit-table tbody tr:hover           .habit-name-cell { background: var(--green-100); }
+.habit-table td.habit-name-cell { text-align:left; padding-left:14px; font-weight:500; position:sticky; left:0; z-index:1; white-space:normal; width:190px; min-width:190px; max-width:190px; overflow:hidden; box-shadow:3px 0 8px rgba(0,0,0,.12); }
+.habit-name-inner { display:flex; align-items:flex-start; gap:6px; }
+.habit-name-inner > div { overflow:hidden; max-width:140px; }
+.habit-name-inner > div > div:first-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
 .habit-emoji { font-size:15px; }
 .habit-meta { display:flex; gap:4px; margin-top:2px; }
 .badge { font-size:9px; font-weight:600; padding:1px 6px; border-radius:10px; }
@@ -557,7 +562,7 @@ function renderCharts() {
         type:'line',
         data:{ labels:analytics.daily_labels||[], datasets:[{ data:analytics.daily_values||[], borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.08)', fill:true, tension:0.4, pointRadius:2, pointHoverRadius:5, borderWidth:2 }] },
         options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-          scales:{ y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10},color:textColor},grid:{color:gridColor}}, x:{ticks:{font:{size:9},maxTicksLimit:15,color:textColor},grid:{display:false}} } }
+          scales:{ y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10},color:textColor},grid:{color:gridColor, z:-1, drawTicks:false}}, x:{ticks:{font:{size:9},maxTicksLimit:15,color:textColor},grid:{display:false}} } }
       });
     }
   } catch(e) { console.error('Line chart:', e); }
@@ -566,11 +571,45 @@ function renderCharts() {
     const barCtx = $('bar-chart');
     if (barCtx) {
       if (barChart) { barChart.destroy(); barChart=null; }
+
+      // Plugin: draw grid lines BEFORE bars are painted so bars cover them
+      const gridBehindBars = {
+        id: 'gridBehindBars',
+        beforeDatasetsDraw(chart) {
+          const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+          ctx.save();
+          y.ticks.forEach((tick, i) => {
+            const yPos = y.getPixelForTick(i);
+            ctx.beginPath();
+            ctx.moveTo(left, yPos);
+            ctx.lineTo(right, yPos);
+            ctx.strokeStyle = isDark ? 'rgba(86,160,100,0.25)' : 'rgba(0,0,0,0.08)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          });
+          ctx.restore();
+        }
+      };
+
       barChart = new Chart(barCtx.getContext('2d'), {
         type:'bar',
-        data:{ labels:analytics.week_labels||[], datasets:[{ data:analytics.weekly_values||[], backgroundColor:['rgba(13,148,136,.8)','rgba(13,148,136,.7)','rgba(13,148,136,.85)','rgba(13,148,136,.75)','rgba(13,148,136,.9)'], borderRadius:6, borderSkipped:false }] },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-          scales:{ y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10},color:textColor},grid:{color:gridColor}}, x:{ticks:{font:{size:11},color:textColor},grid:{display:false}} } }
+        plugins: [gridBehindBars],
+        data:{ labels:analytics.week_labels||[], datasets:[{ data:analytics.weekly_values||[], backgroundColor: isDark ? 'rgba(13,148,136,.9)' : 'rgba(13,148,136,.85)', borderRadius:6, borderSkipped:false }] },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false} },
+          scales:{
+            y:{
+              min:0, max:100,
+              ticks:{ callback:v=>v+'%', font:{size:10}, color:textColor },
+              grid:{ display:false }
+            },
+            x:{
+              ticks:{ font:{size:11}, color:textColor },
+              grid:{ display:false }
+            }
+          }
+        }
       });
     }
   } catch(e) { console.error('Bar chart:', e); }
