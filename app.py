@@ -733,6 +733,17 @@ def static_files(filename):
     except Exception:
         return send_from_directory(STATIC_DIR, 'index.html')
 
+# ── Always init DB (works with both gunicorn and direct run) ──
+init_db()
+
+# ── Start scheduler (works with both gunicorn and direct run) ──
+if SCHEDULER_AVAILABLE:
+    scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
+    scheduler.add_job(daily_email_job, 'cron', hour=21, minute=0)
+    scheduler.start()
+    import atexit
+    atexit.register(lambda: scheduler.shutdown())
+
 # ── Startup ───────────────────────────────────────────────────
 if __name__ == '__main__':
     print("\n" + "="*55)
@@ -748,16 +759,7 @@ if __name__ == '__main__':
 
     init_db()
     print("  ✅ Database ready.")
-
-    # Start background scheduler
-    if SCHEDULER_AVAILABLE:
-        scheduler = BackgroundScheduler(timezone='Asia/Kolkata')
-        scheduler.add_job(daily_email_job, 'cron', hour=21, minute=0)
-        scheduler.start()
-        print("  ✅ Scheduler started — emails at 9 PM IST daily.")
-        import atexit
-        atexit.register(lambda: scheduler.shutdown())
-
+    print("  ✅ Scheduler started — emails at 9 PM IST daily.")
     print("\n  Open browser: http://localhost:5000")
     print("="*55 + "\n")
     app.run(debug=True, port=5000, host='0.0.0.0', use_reloader=False)
