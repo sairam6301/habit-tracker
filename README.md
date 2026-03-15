@@ -28,7 +28,7 @@ python app.py
 
 ### 3. Open your browser
 ```
-http://localhost:5000
+https://habit-flow-gn7b.onrender.com/
 ```
 
 That's it! The database (`habits.db`) is created automatically on first run.
